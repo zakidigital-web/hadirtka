@@ -1,0 +1,6 @@
+{
+  "name": "HadirTKA",
+  "description": "Aplikasi monitoring harian siswa bimbel TKA, absensi & jurnal guru kelas, notifikasi WhatsApp real-time orang tua, laporan mingguan/bulanan PDF, dan dasbor analitik admin.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
