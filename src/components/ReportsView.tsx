@@ -8,11 +8,13 @@ import {
   FileSpreadsheet,
   FileText,
   Printer,
+  Send,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { ScheduledReportConfig } from '../types';
 import {
   addDaysISO,
+  buildWhatsAppShareUrl,
   formatDateLongID,
   formatDateShortID,
   formatTimestampID,
@@ -445,6 +447,12 @@ export const ReportsView: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             {mode !== 'jurnal_pdf' && (
               <>
+                <a href={buildWhatsAppShareUrl(buildWhatsAppSummaryText(report))}
+                  target="_blank" rel="noopener noreferrer"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800 sm:w-auto">
+                  <Send className="h-4 w-4" />
+                  Kirim ke grup WhatsApp
+                </a>
                 <button
                   type="button"
                   onClick={handleCopySummary}
@@ -458,7 +466,7 @@ export const ReportsView: React.FC = () => {
                   ) : (
                     <>
                       <Copy className="h-4 w-4" />
-                      Ringkasan WA
+                      Salin ringkasan
                     </>
                   )}
                 </button>

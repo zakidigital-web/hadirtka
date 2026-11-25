@@ -44,7 +44,7 @@ const ADMIN_NAV: NavItem[] = [
   { id: 'analitik', label: 'Analitik Admin', mobileLabel: 'Analitik', icon: BarChart3 },
   { id: 'laporan', label: 'Laporan PDF', mobileLabel: 'Laporan', icon: FileText },
   { id: 'absensi', label: 'Pantau Absensi', mobileLabel: 'Absensi', icon: ClipboardCheck },
-  { id: 'whatsapp', label: 'Log WA Ortu', mobileLabel: 'WA Ortu', icon: MessageCircle },
+  { id: 'whatsapp', label: 'WhatsApp', mobileLabel: 'WA Grup', icon: MessageCircle },
   { id: 'kelas', label: 'Data Kelas', mobileLabel: 'Kelas', icon: Users },
   { id: 'akun_guru', label: 'Akun Guru', mobileLabel: 'Akun Guru', icon: GraduationCap },
 ];

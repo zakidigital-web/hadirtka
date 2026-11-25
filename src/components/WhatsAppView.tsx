@@ -39,7 +39,7 @@ export const WhatsAppView: React.FC = () => {
     pushToast,
   } = useApp();
 
-  const [subTab, setSubTab] = useState<'grup' | 'log' | 'pengaturan'>(currentUser?.role === 'admin' ? 'log' : 'grup');
+  const [subTab, setSubTab] = useState<'grup' | 'log' | 'pengaturan'>('grup');
   const [filterStatus, setFilterStatus] = useState<'all' | 'siap_kirim' | 'terkirim'>('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -214,7 +214,7 @@ export const WhatsAppView: React.FC = () => {
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             {/* Card 1: Kirim Laporan ke Grup WA Kelas (per rombel 9A/9B/9C/9D) */}
-            <section className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5">
+            <section className="flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3.5">
                 <div>
                   <p className="text-xs font-medium text-slate-500">Laporan Per Rombel Kelas 9</p>
@@ -269,12 +269,12 @@ export const WhatsAppView: React.FC = () => {
                   Sertakan daftar lengkap nama siswa yang hadir
                 </label>
 
-                <div className="flex flex-wrap gap-2 pt-1">
+                <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
                   <a
                     href={buildWhatsAppShareUrl(classGroupReportText)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-emerald-700 px-4 text-xs font-semibold text-white hover:bg-emerald-800"
+                    className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl text-center bg-emerald-700 px-4 text-xs font-semibold text-white hover:bg-emerald-800"
                   >
                     <ExternalLink className="h-4 w-4" />
                     Kirim ke Grup {activeClass?.name}
@@ -311,7 +311,7 @@ export const WhatsAppView: React.FC = () => {
             </section>
 
             {/* Card 2: Kirim Laporan Massal Seluruh Kelas 9 */}
-            <section className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5">
+            <section className="flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3.5">
                 <div>
                   <p className="text-xs font-medium text-slate-500">
@@ -352,12 +352,12 @@ export const WhatsAppView: React.FC = () => {
                   Target: <strong className="text-slate-700">{data.whatsappSettings.massGroupName || 'Grup Koordinasi TKA Kelas 9 SMPN 1 Genteng'}</strong>
                 </p>
 
-                <div className="flex flex-wrap gap-2 pt-1">
+                <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
                   <a
                     href={buildWhatsAppShareUrl(massGroupReportText)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-blue-700 px-4 text-xs font-semibold text-white hover:bg-blue-800"
+                    className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl text-center bg-blue-700 px-4 text-xs font-semibold text-white hover:bg-blue-800"
                   >
                     <ExternalLink className="h-4 w-4" />
                     Kirim ke Grup Massal Kelas 9
@@ -496,7 +496,7 @@ export const WhatsAppView: React.FC = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={() => updateWhatsAppLogStatus(log.id, 'terkirim')}
-                          className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-emerald-700 px-3.5 text-xs font-semibold text-white transition-colors hover:bg-emerald-800"
+                          className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl text-center bg-emerald-700 px-3.5 text-xs font-semibold text-white transition-colors hover:bg-emerald-800"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
                           {log.deliveryStatus === 'terkirim' ? 'Kirim Ulang WA' : 'Kirim via WA'}
