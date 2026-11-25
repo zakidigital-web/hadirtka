@@ -818,11 +818,9 @@ export const TeacherAttendanceView: React.FC = () => {
                 </>
               )}
             </button>
-            <a
-              href={buildWhatsAppShareUrl(groupReportText)}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button type="button"
               onClick={() => {
+                window.location.assign(buildWhatsAppShareUrl(groupReportText));
                 pushToast({
                   title:
                     groupScope === 'kelas'
@@ -838,7 +836,7 @@ export const TeacherAttendanceView: React.FC = () => {
               {groupScope === 'kelas'
                 ? `Kirim ke Grup ${activeClass?.name}`
                 : 'Kirim ke Grup Massal Kelas 9'}
-            </a>
+            </button>
           </div>
         }
       >

@@ -447,12 +447,12 @@ export const ReportsView: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             {mode !== 'jurnal_pdf' && (
               <>
-                <a href={buildWhatsAppShareUrl(buildWhatsAppSummaryText(report))}
-                  target="_blank" rel="noopener noreferrer"
+                <button type="button"
+                  onClick={() => window.location.assign(buildWhatsAppShareUrl(buildWhatsAppSummaryText(report)))}
                   className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800 sm:w-auto">
                   <Send className="h-4 w-4" />
                   Kirim ke grup WhatsApp
-                </a>
+                </button>
                 <button
                   type="button"
                   onClick={handleCopySummary}

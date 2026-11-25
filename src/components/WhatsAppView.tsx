@@ -270,15 +270,13 @@ export const WhatsAppView: React.FC = () => {
                 </label>
 
                 <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
-                  <a
-                    href={buildWhatsAppShareUrl(classGroupReportText)}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button type="button"
+                    onClick={() => window.location.assign(buildWhatsAppShareUrl(classGroupReportText))}
                     className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl text-center bg-emerald-700 px-4 text-xs font-semibold text-white hover:bg-emerald-800"
                   >
                     <ExternalLink className="h-4 w-4" />
                     Kirim ke Grup {activeClass?.name}
-                  </a>
+                  </button>
                   <button
                     type="button"
                     onClick={() =>
@@ -353,15 +351,13 @@ export const WhatsAppView: React.FC = () => {
                 </p>
 
                 <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
-                  <a
-                    href={buildWhatsAppShareUrl(massGroupReportText)}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button type="button"
+                    onClick={() => window.location.assign(buildWhatsAppShareUrl(massGroupReportText))}
                     className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl text-center bg-blue-700 px-4 text-xs font-semibold text-white hover:bg-blue-800"
                   >
                     <ExternalLink className="h-4 w-4" />
                     Kirim ke Grup Massal Kelas 9
-                  </a>
+                  </button>
                   <button
                     type="button"
                     onClick={() =>
@@ -452,13 +448,13 @@ export const WhatsAppView: React.FC = () => {
                         </h3>
 
                         {currentUser?.role === 'admin' && (
-                          <a
-                            href={buildWhatsAppShareUrl(log.message)}
+                          <button type="button"
+                            onClick={() => window.location.assign(buildWhatsAppShareUrl(log.message))}
                             className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 sm:w-auto"
                           >
                             <Send className="h-3.5 w-3.5" />
                             Kirim ke grup WA
-                          </a>
+                          </button>
                         )}
 
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
