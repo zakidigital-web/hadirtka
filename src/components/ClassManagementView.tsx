@@ -22,6 +22,8 @@ import {
 import { formatPhoneDisplay, getInitials } from '../utils/formatters';
 import { BottomSheet } from './BottomSheet';
 
+const STUDENTS_PER_PAGE = 10;
+
 export const ClassManagementView: React.FC = () => {
   const {
     data, currentUser, role,
@@ -36,8 +38,14 @@ export const ClassManagementView: React.FC = () => {
   } = useApp();
 
   const canAdmin = currentUser?.role === 'admin' && role === 'admin';
-  const [classFilter, setClassFilter] = useState<string>('all');
+  const [classFilter, updateClassFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
+
+  const [page, setPage] = useState(1);
+  const setClassFilter = (id: string) => {
+    updateClassFilter(id);
+    setPage(1);
+  };
 
   // Student sheet state
   const [studentSheetOpen, setStudentSheetOpen] = useState(false);
@@ -93,6 +101,11 @@ export const ClassManagementView: React.FC = () => {
       })
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [data.students, classFilter, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / STUDENTS_PER_PAGE));
+  const currentPage = Math.min(page, totalPages);
+  const startIndex = (currentPage - 1) * STUDENTS_PER_PAGE;
+  const visibleStudents = filteredStudents.slice(startIndex, startIndex + STUDENTS_PER_PAGE);
 
   const validImportRows = useMemo(() => parsedRows.filter((r) => r.valid), [parsedRows]);
   const invalidImportRows = useMemo(() => parsedRows.filter((r) => !r.valid), [parsedRows]);
@@ -295,7 +308,11 @@ export const ClassManagementView: React.FC = () => {
       </section>
 
       {/* Class & Teacher Overview Grid (with Edit Guru & Rombel button) */}
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <details className="rounded-2xl border border-slate-200 bg-white px-4">
+        <summary className="cursor-pointer py-3 text-sm font-semibold text-blue-800">
+          Data kelas ({data.classrooms.length})
+        </summary>
+        <div className="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 xl:grid-cols-4">
         {data.classrooms.map((cls) => {
           const count = data.students.filter((s) => s.classId === cls.id).length;
           const active = classFilter === cls.id;
@@ -353,7 +370,8 @@ export const ClassManagementView: React.FC = () => {
             </div>
           );
         })}
-      </section>
+        </div>
+      </details>
 
       {/* Student Directory */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
@@ -363,7 +381,7 @@ export const ClassManagementView: React.FC = () => {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder="Cari siswa, orang tua, atau nomor WA..."
               className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-slate-50/70 pr-3 pl-10 text-sm text-slate-900 focus:border-blue-600 focus:bg-white focus:outline-none"
             />
@@ -404,7 +422,7 @@ export const ClassManagementView: React.FC = () => {
               Tidak ada siswa ditemukan.
             </p>
           ) : (
-            filteredStudents.map((stu) => {
+            visibleStudents.map((stu) => {
               const cls = classMap.get(stu.classId);
               return (
                 <div
@@ -452,6 +470,20 @@ export const ClassManagementView: React.FC = () => {
             })
           )}
         </div>
+        {totalPages > 1 && (
+          <nav aria-label="Halaman data siswa" className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs">
+            <span aria-live="polite" className="text-slate-600">
+              {startIndex + 1}–{startIndex + visibleStudents.length} dari {filteredStudents.length} siswa
+            </span>
+            <div className="flex items-center gap-2">
+              <button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}
+                className="min-h-11 rounded-xl border border-blue-200 px-3 font-semibold text-blue-800 disabled:opacity-40">Sebelumnya</button>
+              <span className="tabular-nums">{currentPage} / {totalPages}</span>
+              <button type="button" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}
+                className="min-h-11 rounded-xl border border-blue-200 px-3 font-semibold text-blue-800 disabled:opacity-40">Berikutnya</button>
+            </div>
+          </nav>
+        )}
       </section>
 
       {/* Excel Import Bottom Sheet */}
