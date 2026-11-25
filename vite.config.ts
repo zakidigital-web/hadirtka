@@ -7,11 +7,12 @@ import {defineConfig, loadEnv} from 'vite';
 import { accountApi } from './server/accountApi.mjs';
 
 export default defineConfig(({mode}) => {
-  const bootstrapEnv = {...loadEnv(mode, process.cwd(), 'HADIRTKA_'), ...process.env};
+  const bootstrapEnv = {...loadEnv(mode, process.cwd(), ['HADIRTKA_', 'DATABASE_URL']), ...process.env};
   return {
+    css: {postcss: {plugins: []}},
     plugins: [
       {
-        name: 'account-api',
+        name: 'hadirtka-api',
         configureServer(server) { server.middlewares.use('/api/accounts', accountApi(bootstrapEnv)); },
         configurePreviewServer(server) { server.middlewares.use('/api/accounts', accountApi(bootstrapEnv)); },
       },
@@ -42,7 +43,7 @@ export default defineConfig(({mode}) => {
       },
     },
     server: {
-      fs: {deny: ['.env', '.env.*', '*.{crt,pem}', '**/.git/**', '**/server/**', '**/.vite-temp/**']},
+      fs: {deny: ['.env', '.env.*', '*.{crt,pem}', '**/.git/**', '**/server/**', '**/.vite-temp/**', '**/private-import/**', '**/*.sqlite*']},
 
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.

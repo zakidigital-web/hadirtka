@@ -872,7 +872,7 @@ export const ClassManagementView: React.FC = () => {
         title="Reset Data ke Contoh Awal?"
       >
         <p className="text-sm text-slate-600">
-          Semua perubahan lokal pada data kelas, absensi harian, jurnal guru, dan log WA akan dikembalikan ke data awal Bimbel TKA.
+          Data kelas, siswa, absensi, jurnal, dan log WA pada server bersama akan diganti dengan data contoh. Perubahan berlaku untuk semua perangkat.
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <button

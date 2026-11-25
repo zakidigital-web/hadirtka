@@ -96,7 +96,7 @@ const AvatarImage: React.FC<{ src: string; alt: string; fallback: string; size?:
 const AppShell: React.FC = () => {
   const {
     data,
-    currentUser, authReady,
+    currentUser, authReady, workspaceReady, workspaceError, workspacePending, retryWorkspace,
     login,
     logout,
     updateCurrentUserProfile,
@@ -131,6 +131,10 @@ const AppShell: React.FC = () => {
     );
   }
 
+  if (!workspaceReady) return <div role="status" className="p-5">
+    {workspaceError || 'Memuat data sekolah…'}
+    {workspaceError && <button className="ml-3 underline" onClick={retryWorkspace}>Coba lagi</button>}
+  </div>;
   const userInitials = currentUser.name
     .split(/\s+/)
     .slice(0, 2)
@@ -374,6 +378,8 @@ const AppShell: React.FC = () => {
 
         {/* Scrollable Content Viewport */}
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-4 pb-24 sm:px-6 md:py-6 xl:px-8 xl:py-6">
+          {workspaceError && <div role="alert" className="mb-3 rounded-xl bg-amber-50 p-3 text-sm">{workspaceError} <button className="underline" onClick={retryWorkspace}>Muat ulang</button></div>}
+          {workspacePending && <p role="status" className="mb-2 text-sm">Menyimpan ke server…</p>}
           {renderContent()}
         </main>
       </div>
@@ -473,7 +479,7 @@ const AppShell: React.FC = () => {
       />
 
       {/* Real-Time Floating Snackbar Toasts */}
-      {toasts.length > 0 && (
+      {toasts.length > 0 && !workspacePending && !workspaceError && (
         <div
           aria-live="polite"
           className="pointer-events-none fixed inset-x-3 bottom-[72px] z-50 flex flex-col gap-2 sm:left-auto sm:right-6 sm:w-[390px] md:bottom-6"

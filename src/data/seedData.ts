@@ -1,3 +1,4 @@
+import defaults from '../../shared/defaults.json';
 import {
   AppData,
   AttendanceRecord,
@@ -19,67 +20,8 @@ import {
   STATUS_META,
 } from '../utils/formatters';
 
-export const DEFAULT_WA_SETTINGS: WhatsAppSettings = {
-  autoNotifyAlpha: true,
-  autoNotifySakit: true,
-  autoNotifyIzin: true,
-  autoNotifyHadir: false,
-  institutionName: 'SMP Negeri 1 Genteng — Bimbel TKA Kelas 9',
-  massGroupName: 'Grup Koordinasi TKA Kelas 9 SMPN 1 Genteng',
-  templates: {
-    alpha:
-      'Assalamualaikum Bapak/Ibu {nama_ortu}. Kami dari Tim Bimbel TKA Kelas 9 SMP Negeri 1 Genteng menginformasikan bahwa ananda *{nama_siswa}* ({kelas}) tercatat *TIDAK HADIR (Alpha)* pada sesi bimbingan TKA {tanggal} pukul {waktu} WIB. Mohon konfirmasi kehadiran ananda kepada guru pengajar. Terima kasih.\n\n— {guru}\n{lembaga}',
-    sakit:
-      'Assalamualaikum Bapak/Ibu {nama_ortu}. Kami menerima informasi bahwa ananda *{nama_siswa}* ({kelas}) berhalangan hadir pada Bimbel TKA Kelas 9 karena *Sakit* pada {tanggal}. Semoga ananda lekas sembuh dan dapat kembali mengikuti persiapan TKA.\n\nCatatan: {catatan}\n— {guru} ({lembaga})',
-    izin:
-      'Assalamualaikum Bapak/Ibu {nama_ortu}. Terima kasih atas konfirmasinya. Ananda *{nama_siswa}* ({kelas}) tercatat *Izin* pada sesi Bimbel TKA {tanggal}. Ringkasan materi dan latihan soal TKA hari ini akan diberikan pada pertemuan berikutnya.\n\nCatatan: {catatan}\n— {guru} ({lembaga})',
-    hadir:
-      'Assalamualaikum Bapak/Ibu {nama_ortu}. Ananda *{nama_siswa}* ({kelas}) telah *Hadir* mengikuti sesi Bimbel TKA Kelas 9 pada {tanggal} pukul {waktu} WIB bersama {guru}.\n\n— {lembaga}',
-  },
-};
-
-const SEED_CLASSROOMS: Classroom[] = [
-  {
-    id: 'cls-9a',
-    name: 'Kelas 9A',
-    program: 'Bimbel TKA Kelas 9 — Matematika & Bahasa Indonesia',
-    teacherName: 'Guru Contoh A',
-    teacherPhone: '',
-    schedule: 'Senin – Jumat · 13:30–14:30 WIB',
-    room: 'Ruang 9A',
-    groupWaName: 'Grup WA Wali & Siswa Kelas 9A',
-  },
-  {
-    id: 'cls-9b',
-    name: 'Kelas 9B',
-    program: 'Bimbel TKA Kelas 9 — Matematika & Bahasa Indonesia',
-    teacherName: 'Guru Contoh B',
-    teacherPhone: '',
-    schedule: 'Senin – Jumat · 13:30–14:30 WIB',
-    room: 'Ruang 9B',
-    groupWaName: 'Grup WA Wali & Siswa Kelas 9B',
-  },
-  {
-    id: 'cls-9c',
-    name: 'Kelas 9C',
-    program: 'Bimbel TKA Kelas 9 — Matematika & Bahasa Indonesia',
-    teacherName: 'Guru Contoh C',
-    teacherPhone: '',
-    schedule: 'Senin – Jumat · 13:30–14:30 WIB',
-    room: 'Ruang 9C',
-    groupWaName: 'Grup WA Wali & Siswa Kelas 9C',
-  },
-  {
-    id: 'cls-9d',
-    name: 'Kelas 9D',
-    program: 'Bimbel TKA Kelas 9 — Matematika & Bahasa Indonesia',
-    teacherName: 'Guru Contoh D',
-    teacherPhone: '',
-    schedule: 'Senin – Jumat · 13:30–14:30 WIB',
-    room: 'Ruang 9D',
-    groupWaName: 'Grup WA Wali & Siswa Kelas 9D',
-  },
-];
+export const DEFAULT_WA_SETTINGS: WhatsAppSettings = defaults.whatsappSettings;
+const SEED_CLASSROOMS: Classroom[] = defaults.classrooms;
 
 // Subject-based teachers rotating across Kelas 9A-9D each day
 const ROTATING_TEACHERS: Record<TkaSubject, string[]> = {

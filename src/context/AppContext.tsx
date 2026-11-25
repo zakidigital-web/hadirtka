@@ -1,3 +1,4 @@
+import { useWorkspace } from './useWorkspace';
 import { accountRequest } from '../utils/accounts';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { createSeedData } from '../data/seedData';
@@ -29,26 +30,12 @@ import {
   STATUS_META,
   SUBJECT_META,
 } from '../utils/formatters';
-import {
-  applyProfileOverride,
-  ProfileOverride,
-
-} from '../utils/profileStorage';
-
-const STORAGE_KEY = 'hadirtka_smpn1genteng_v3';
-
-
-const DEFAULT_REPORT_SCHEDULE: ScheduledReportConfig = {
-  frequency: 'mingguan',
-  dayOfWeek: 'Jumat',
-  dayOfMonth: 28,
-  timeWib: '17:00',
-  includeJournalDetails: true,
-  includeAttendanceSummary: true,
-};
+import type { ProfileOverride } from '../utils/profileStorage';
+import defaults from '../../shared/defaults.json';
 
 interface AppContextValue {
   authReady: boolean;
+  workspaceReady:boolean; workspaceError:string; workspacePending:boolean; retryWorkspace:()=>void;
   data: AppData;
   currentUser: AuthUser | null;
   login: (user: AuthUser) => void;
@@ -100,32 +87,9 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-function loadInitialData(): AppData {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as AppData;
-      if (parsed && Array.isArray(parsed.classrooms) && Array.isArray(parsed.students)) {
-        return {
-          ...parsed,
-          classrooms: parsed.classrooms.map(c => c.schedule === 'Senin – Jumat · 14:00–15:30 WIB'
-            ? {...c, schedule:'Senin – Jumat · 13:30–14:30 WIB'} : c),
-          reportSchedule: parsed.reportSchedule || DEFAULT_REPORT_SCHEDULE,
-        };
-      }
-    }
-  } catch {
-    // Fallback to seed data
-  }
-  return {
-    ...createSeedData(),
-    reportSchedule: DEFAULT_REPORT_SCHEDULE,
-  };
-}
-
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [data, setData] = useState<AppData>(() => loadInitialData());
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const {data,setData,workspaceReady,workspaceError,workspacePending,flush,retry} = useWorkspace(currentUser?.id);
   const [authReady, setAuthReady] = useState(false);
   const [role, setRoleState] = useState<RoleMode>('guru');
   const [activeTab, setActiveTab] = useState<NavTab>('absensi');
@@ -134,14 +98,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedSubject, setSelectedSubject] = useState<TkaSubject>('matematika');
   const canAdmin = currentUser?.role === 'admin' && role === 'admin';
   const [toasts, setToasts] = useState<ToastNotice[]>([]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch {
-      // Ignore storage quota errors
-    }
-  }, [data]);
 
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -156,7 +112,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const enterSession = useCallback((rawUser: AuthUser) => {
-    const user = rawUser.revision ? rawUser : applyProfileOverride(rawUser);
+    const user = rawUser;
     setCurrentUser(user);
     setRoleState(user.role);
     setActiveTab(user.role === 'admin' ? 'analitik' : 'absensi');
@@ -223,6 +179,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logout = useCallback(async () => {
     try {
+      await flush();
       await accountRequest('logout', {});
       setCurrentUser(null);
       setToasts([]);
@@ -653,7 +610,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!canAdmin) return;
     const fresh = {
       ...createSeedData(),
-      reportSchedule: DEFAULT_REPORT_SCHEDULE,
+      reportSchedule: defaults.reportSchedule as ScheduledReportConfig,
     };
     setData(fresh);
     setSelectedClassId(fresh.classrooms[0]?.id || 'cls-9a');
@@ -669,7 +626,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider
       value={{
         data,
-        currentUser, authReady,
+        currentUser, authReady, workspaceReady, workspaceError, workspacePending, retryWorkspace:retry,
         login,
         logout,
         updateCurrentUserProfile,
