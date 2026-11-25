@@ -81,6 +81,7 @@ interface AppContextValue {
   updateStudent: (student: Student) => void;
   deleteStudent: (studentId: string) => void;
   addClassroom: (classroom: Omit<Classroom, 'id'>) => void;
+  deleteClassroom: (id: string) => void;
   updateClassroom: (classroom: Classroom) => void;
   resetDemoData: () => void;
 }
@@ -231,7 +232,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
 
       let createdLog: WhatsAppLog | null = null;
-      if (triggerAutoWhatsApp && statusChanged && shouldAutoNotify(status, data.whatsappSettings)) {
+      if (student.parentWhatsapp && triggerAutoWhatsApp && statusChanged && shouldAutoNotify(status, data.whatsappSettings)) {
         const message = renderWhatsAppTemplate(data.whatsappSettings.templates[status], {
           nama_siswa: student.name,
           nama_ortu: student.parentName,
@@ -461,7 +462,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }));
       pushToast({
         title: 'Siswa baru ditambahkan',
-        subtitle: `${student.name} terdaftar dengan kontak WA ${student.parentWhatsapp}.`,
+        subtitle: `${student.name} berhasil ditambahkan.`,
         tone: 'success',
       });
     },
@@ -606,6 +607,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [canAdmin, pushToast]
   );
 
+  const deleteClassroom = (id: string) => {
+    if (!canAdmin) return;
+    const remaining = data.classrooms.filter(c => c.id !== id);
+    if (!remaining.length || [...data.students, ...data.attendance, ...data.journals].some(row => row.classId === id)) {
+      pushToast({ title: 'Kelas belum bisa dihapus', subtitle: 'Setidaknya satu kelas harus tersedia. Kelas dengan siswa, absensi, atau jurnal masih digunakan.', tone: 'warning' });
+      return;
+    }
+    setData(prev => ({ ...prev, classrooms: prev.classrooms.filter(c => c.id !== id) }));
+    if (selectedClassId === id) setSelectedClassId(remaining[0].id);
+  };
+
   const resetDemoData = useCallback(() => {
       if (!canAdmin) return;
     const fresh = {
@@ -655,7 +667,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateStudent,
         deleteStudent,
         addClassroom,
-        updateClassroom,
+        updateClassroom, deleteClassroom,
         resetDemoData,
       }}
     >

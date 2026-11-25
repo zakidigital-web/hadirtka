@@ -941,7 +941,7 @@ export const TeacherAttendanceView: React.FC = () => {
         }
         footer={
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-            {canAdmin && activeStudent && (
+            {canAdmin && activeStudent?.parentWhatsapp && (
               <a
                 href={detailWaUrl}
                 target="_blank"

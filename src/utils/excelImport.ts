@@ -45,10 +45,10 @@ export function downloadExcelTemplate(classrooms: Classroom[]): void {
       Wajib: 'Wajib',
       Keterangan: `Rombel Kelas 9 (contoh: ${classrooms.map((c) => c.name).join(', ')}). Jika rombel belum ada (mis. Kelas 9E), otomatis dibuat.`,
     },
-    { Kolom: 'Nama_Orang_Tua', Wajib: 'Wajib', Keterangan: 'Nama orang tua/wali penerima notifikasi WA real-time.' },
+    { Kolom: 'Nama_Orang_Tua', Wajib: 'Opsional', Keterangan: 'Nama orang tua/wali penerima notifikasi WA real-time.' },
     {
       Kolom: 'No_WA_Orang_Tua',
-      Wajib: 'Wajib',
+      Wajib: 'Opsional',
       Keterangan: 'Nomor WhatsApp aktif format 08xxxx atau 628xxxx (minimal 9 digit).',
     },
     { Kolom: 'No_Absen_Keterangan', Wajib: 'Opsional', Keterangan: 'Nomor absen rombel atau keterangan tambahan siswa.' },
@@ -194,8 +194,7 @@ export async function parseExcelFile(
 
     const errors: string[] = [];
     if (!name || name.length < 2) errors.push('Nama siswa wajib diisi');
-    if (!parentName) errors.push('Nama orang tua wajib diisi');
-    if (!parentWhatsapp || parentWhatsapp.length < 9) {
+    if (rawWa && parentWhatsapp.length < 9) {
       errors.push('Nomor WA minimal 9 digit');
     }
 

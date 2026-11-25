@@ -148,5 +148,14 @@ export async function writeChanges(db, account, changes) {
       [kind, id, stored],
     );
   }
+  for (const {kind, id, value} of changes) {
+    if (kind !== 'classrooms' || value !== null) continue;
+    const result = await db.query(`SELECT
+      EXISTS (SELECT FROM ht_records WHERE kind='classrooms' AND value IS NOT NULL) AS has_class,
+      EXISTS (SELECT FROM ht_records WHERE kind IN ('students','attendance','journals') AND value->>'classId'=$1)
+      OR EXISTS (SELECT FROM ht_accounts WHERE profile->>'classId'=$1) AS in_use`, [id]);
+    if (!result.rows[0].has_class || result.rows[0].in_use)
+      fail(409, 'Sisakan satu kelas dan pastikan kelas yang dihapus tidak terhubung ke siswa, akun, absensi, atau jurnal.');
+  }
   return true;
 }

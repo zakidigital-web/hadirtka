@@ -704,7 +704,7 @@ export const AdminDashboardView: React.FC = () => {
                           </p>
                         </div>
 
-                        <a
+                        {item.student.parentWhatsapp && <a
                           href={waHref}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -712,7 +712,7 @@ export const AdminDashboardView: React.FC = () => {
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
                           Hubungi WA
-                        </a>
+                        </a>}
                       </div>
                     );
                   })}

@@ -30,7 +30,7 @@ export const ClassManagementView: React.FC = () => {
     updateStudent,
     deleteStudent,
     addClassroom,
-    updateClassroom,
+    updateClassroom, deleteClassroom,
     resetDemoData,
     pushToast,
   } = useApp();
@@ -148,7 +148,7 @@ export const ClassManagementView: React.FC = () => {
 
   const handleSaveStudent = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stuName.trim() || !stuParentName.trim() || !stuParentWa.trim()) return;
+    if (!stuName.trim()) return;
 
     const payload = {
       nis: stuNis.trim() || `0091${Date.now().toString().slice(-4)}`,
@@ -340,8 +340,15 @@ export const ClassManagementView: React.FC = () => {
                   className="inline-flex items-center gap-1 font-semibold text-blue-800 hover:underline"
                 >
                   <Pencil className="h-3 w-3" />
-                  Ubah Guru
+                  Edit kelas
                 </button>)}
+                {canAdmin && <button type="button" className="min-h-11 font-semibold text-rose-700"
+                  onClick={() => {
+                    if (window.confirm(`Hapus kelas ${cls.name}?`)) {
+                      deleteClassroom(cls.id);
+                      if (classFilter === cls.id) setClassFilter('all');
+                    }
+                  }}>Hapus kelas</button>}
               </div>
             </div>
           );
@@ -415,7 +422,7 @@ export const ClassManagementView: React.FC = () => {
                         {stu.schoolOrigin}
                       </p>
                       <p className="mt-0.5 truncate text-xs text-slate-600">
-                        Wali: {stu.parentName} · WA{' '}
+                        Wali: {stu.parentName || '—'} · WA{' '}
                         <span className="font-mono">{formatPhoneDisplay(stu.parentWhatsapp)}</span>
                       </p>
                     </div>
@@ -650,12 +657,11 @@ export const ClassManagementView: React.FC = () => {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label htmlFor="stu-parent" className="block text-xs font-semibold text-slate-700">
-                Nama Orang Tua / Wali *
+                Nama Orang Tua / Wali (opsional)
               </label>
               <input
                 id="stu-parent"
                 type="text"
-                required
                 value={stuParentName}
                 onChange={(e) => setStuParentName(e.target.value)}
                 placeholder="Contoh: Wali Contoh"
@@ -664,12 +670,11 @@ export const ClassManagementView: React.FC = () => {
             </div>
             <div>
               <label htmlFor="stu-wa" className="block text-xs font-semibold text-slate-700">
-                Nomor WhatsApp Orang Tua *
+                Nomor WhatsApp Orang Tua (opsional)
               </label>
               <input
                 id="stu-wa"
                 type="tel"
-                required
                 value={stuParentWa}
                 onChange={(e) => setStuParentWa(e.target.value)}
                 placeholder="0812xxxxxxxx"
