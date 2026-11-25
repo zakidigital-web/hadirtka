@@ -22,6 +22,13 @@ export interface Classroom {
   teacherName: string; // Wali rombel / penanggung jawab kelas
   teacherPhone: string;
   schedule: string;
+  scheduleDetails?: {
+    mode: 'weekly' | 'date';
+    days: string[];
+    date: string;
+    start: string;
+    end: string;
+  };
   room: string;
   groupWaName?: string;
 }

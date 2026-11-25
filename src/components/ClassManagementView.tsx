@@ -22,6 +22,12 @@ import {
 import { formatPhoneDisplay, getInitials } from '../utils/formatters';
 import { BottomSheet } from './BottomSheet';
 
+const weekdays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+const defaultSchedule: NonNullable<Classroom['scheduleDetails']> = {
+  mode: 'weekly', days: weekdays.slice(0, 5), date: '', start: '13:30', end: '14:30',
+};
+const scheduleInput = 'mt-1 block min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900';
+
 const STUDENTS_PER_PAGE = 10;
 
 export const ClassManagementView: React.FC = () => {
@@ -65,7 +71,8 @@ export const ClassManagementView: React.FC = () => {
   const [clsProgram, setClsProgram] = useState('');
   const [clsTeacher, setClsTeacher] = useState('');
   const [clsPhone, setClsPhone] = useState('');
-  const [clsSchedule, setClsSchedule] = useState('');
+  const [clsSchedule, setClsSchedule] = useState(defaultSchedule);
+  const [keepLegacySchedule, setKeepLegacySchedule] = useState(false);
   const [clsRoom, setClsRoom] = useState('');
   const [clsGroupWa, setClsGroupWa] = useState('');
 
@@ -141,7 +148,8 @@ export const ClassManagementView: React.FC = () => {
     setClsProgram('Bimbel TKA Kelas 9 — Matematika & Bahasa Indonesia');
     setClsTeacher('');
     setClsPhone('0812');
-    setClsSchedule('Senin – Jumat · 13:30–14:30 WIB');
+    setClsSchedule(defaultSchedule);
+    setKeepLegacySchedule(false);
     setClsRoom('');
     setClsGroupWa('');
     setClassSheetOpen(true);
@@ -153,7 +161,8 @@ export const ClassManagementView: React.FC = () => {
     setClsProgram(cls.program);
     setClsTeacher(cls.teacherName);
     setClsPhone(cls.teacherPhone);
-    setClsSchedule(cls.schedule);
+    setClsSchedule(cls.scheduleDetails || defaultSchedule);
+    setKeepLegacySchedule(!cls.scheduleDetails && !!cls.schedule && cls.schedule !== 'Senin – Jumat · 13:30–14:30 WIB');
     setClsRoom(cls.room);
     setClsGroupWa(cls.groupWaName || `Grup WA TKA ${cls.name} SMPN 1 Genteng`);
     setClassSheetOpen(true);
@@ -185,12 +194,21 @@ export const ClassManagementView: React.FC = () => {
     e.preventDefault();
     if (!clsName.trim() || !clsTeacher.trim()) return;
 
+    const {mode, days, date, start, end} = clsSchedule;
+    if (!keepLegacySchedule && (end <= start || (mode === 'weekly' && !days.length))) {
+      pushToast({ title: 'Periksa jadwal bimbel', subtitle: end <= start ? 'Jam selesai harus setelah jam mulai.' : 'Pilih minimal satu hari bimbel.', tone: 'warning' });
+      return;
+    }
+    const period = mode === 'weekly' ? days.join(', ') : new Date(date + 'T12:00:00').toLocaleDateString('id-ID', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
     const payload = {
       name: clsName.trim(),
       program: clsProgram.trim() || 'Bimbel TKA Kelas 9 — Matematika & Bahasa Indonesia',
       teacherName: clsTeacher.trim(),
       teacherPhone: clsPhone.trim() || '',
-      schedule: clsSchedule.trim() || 'Senin – Jumat · 13:30–14:30 WIB',
+      schedule: keepLegacySchedule && editingClass ? editingClass.schedule : `${period} · ${start}–${end} WIB`,
+      ...(!keepLegacySchedule && { scheduleDetails: clsSchedule }),
       room: clsRoom.trim() || `Ruang ${clsName.trim()}`,
       groupWaName: clsGroupWa.trim() || `Grup WA TKA ${clsName.trim()} SMPN 1 Genteng`,
     };
@@ -812,19 +830,50 @@ export const ClassManagementView: React.FC = () => {
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label htmlFor="cls-schedule" className="block text-xs font-semibold text-slate-700">
-                Jadwal Bimbel
-              </label>
-              <input
-                id="cls-schedule"
-                type="text"
-                value={clsSchedule}
-                onChange={(e) => setClsSchedule(e.target.value)}
-                placeholder="Senin – Jumat · 13:30–14:30 WIB"
-                className="mt-1 min-h-[44px] w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-sm text-slate-900 focus:border-blue-600 focus:bg-white focus:outline-none"
-              />
-            </div>
+            <fieldset className="min-w-0 space-y-3 sm:col-span-2">
+              <legend className="text-xs font-semibold text-slate-700">Jadwal Bimbel</legend>
+              {keepLegacySchedule ? (
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <span>{editingClass?.schedule}</span>
+                  <button type="button" className="min-h-11 font-semibold text-blue-700" onClick={() => setKeepLegacySchedule(false)}>Ubah jadwal</button>
+                </div>
+              ) : (
+                <>
+                  <label className="block text-xs font-semibold">Jenis jadwal
+                    <select className={scheduleInput} value={clsSchedule.mode}
+                      onChange={e => setClsSchedule({...clsSchedule, mode: e.target.value === 'date' ? 'date' : 'weekly'})}>
+                      <option value="weekly">Setiap minggu</option>
+                      <option value="date">Tanggal tertentu</option>
+                    </select>
+                  </label>
+                  {clsSchedule.mode === 'date' ? (
+                    <label className="block text-xs font-semibold">Tanggal bimbel
+                      <input required type="date" className={scheduleInput} value={clsSchedule.date}
+                        onChange={e => setClsSchedule({...clsSchedule, date: e.target.value})} />
+                    </label>
+                  ) : (
+                    <fieldset className="flex flex-wrap gap-x-3">
+                      <legend className="text-xs font-semibold">Hari bimbel</legend>
+                      {weekdays.map(day => (
+                        <label key={day} className="flex min-h-11 items-center gap-1.5 text-sm">
+                          <input type="checkbox" checked={clsSchedule.days.includes(day)}
+                            onChange={e => setClsSchedule({...clsSchedule, days: weekdays.filter(d => d === day ? e.target.checked : clsSchedule.days.includes(d))})} />
+                          {day}
+                        </label>
+                      ))}
+                    </fieldset>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    {(['start', 'end'] as const).map(key => (
+                      <label key={key} className="min-w-0 text-xs font-semibold">{key === 'start' ? 'Jam mulai' : 'Jam selesai'} (WIB)
+                        <input required type="time" className={scheduleInput} value={clsSchedule[key]}
+                          onChange={e => setClsSchedule({...clsSchedule, [key]: e.target.value})} />
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
+            </fieldset>
             <div>
               <label htmlFor="cls-phone" className="block text-xs font-semibold text-slate-700">
                 Nomor WA Koordinator
