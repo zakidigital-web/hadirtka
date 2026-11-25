@@ -1,3 +1,4 @@
+import { BackupView } from './BackupView';
 import React, { useMemo, useState } from 'react';
 import {
   Area,
@@ -40,7 +41,7 @@ import {
 import { computeSessionMinutes, downloadMonthlyReportPDF } from '../utils/pdfGenerator';
 
 type PeriodKey = '7d' | '14d' | '30d' | 'bulan_ini';
-type AdminSubTab = 'analitik' | 'skema';
+type AdminSubTab = 'analitik' | 'skema' | 'cadangan';
 
 export const AdminDashboardView: React.FC = () => {
   const { data, pushToast, setActiveTab } = useApp();
@@ -319,6 +320,7 @@ export const AdminDashboardView: React.FC = () => {
     }
   };
 
+  if (adminTab === 'cadangan') return <BackupView onBack={() => setAdminTab('analitik')} />;
   return (
     <div className="space-y-5">
       {/* Header & Admin Sub-Navigation */}
@@ -336,6 +338,9 @@ export const AdminDashboardView: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
+            <button type="button" onClick={() => setAdminTab('cadangan')} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-blue-200 px-3 text-sm font-semibold text-blue-700">
+              <Database className="h-4 w-4" /> Cadangan database
+            </button>
             <div className="inline-flex rounded-xl bg-slate-100 p-1">
               <button
                 type="button"

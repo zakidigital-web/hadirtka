@@ -53,6 +53,14 @@ export async function initialize(pool, env, legacyAccounts) {
         PRIMARY KEY(kind,id)
       );
       CREATE UNIQUE INDEX IF NOT EXISTS ht_records_version ON ht_records(version);
+      CREATE TABLE IF NOT EXISTS ht_backup_jobs (
+        id uuid PRIMARY KEY, owner text NOT NULL, purpose text NOT NULL, bytes integer NOT NULL,
+        expires timestamptz NOT NULL DEFAULT now()+interval '30 minutes', reviewed boolean NOT NULL DEFAULT false
+      );
+      CREATE TABLE IF NOT EXISTS ht_backup_chunks (
+        job uuid REFERENCES ht_backup_jobs ON DELETE CASCADE, part integer NOT NULL, data bytea NOT NULL,
+        PRIMARY KEY(job,part)
+      );
       CREATE TABLE IF NOT EXISTS ht_schema (version integer PRIMARY KEY);
     `);
     if ((await db.query('SELECT 1 FROM ht_schema WHERE version=1')).rowCount) {

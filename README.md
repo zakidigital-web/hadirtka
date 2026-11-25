@@ -43,3 +43,11 @@ setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 Untuk setiap salinan, jalankan `npm run migrate -- school /lokasi/hadirtka-sekolah.json`. Impor mengabaikan rekaman identik. Jika dua perangkat memiliki nilai berbeda untuk ID yang sama, transaksi berkas tersebut dibatalkan dan menampilkan ID konflik. Periksa salinan bersama operator sekolah sebelum mengulang impor. Verifikasi jumlah siswa, absensi dan laporan harian sebelum beralih ke alamat Vercel.
 
 [Dokumentasi Vite di Vercel](https://vercel.com/docs/frameworks/frontend/vite) · [Integrasi Neon di Vercel](https://vercel.com/marketplace/neon)
+
+## Cadangan dan pemulihan
+
+Masuk sebagai admin, lalu buka **Analitik → Cadangan database**. Pilih kata sandi cadangan (minimal 12 karakter), ulangi, lalu unduh file `.htbackup`. Simpan file di perangkat atau media terpisah dari database. Simpan kata sandinya di pengelola kata sandi. File terenkripsi memuat akun beserta hash kata sandi, profil, data siswa, kelas, absensi, jurnal, antrean WA dan pengaturan.
+
+Untuk memulihkan, pilih file dan masukkan kata sandi yang dipakai saat mencadangkan. **Periksa cadangan** menampilkan waktu pembuatan dan jumlah rekaman sebelum penggantian. Unduh cadangan kondisi terkini jika diperlukan. Ketik **PULIHKAN** dan tekan **Pulihkan database** untuk mengganti data aktif. Setelah selesai, semua pengguna harus masuk kembali dengan akun dan kata sandi dari cadangan.
+
+Untuk pemulihan ke database Neon baru, hubungkan aplikasi ke database tujuan, masuk dengan admin awal, lalu gunakan file cadangan. URL koneksi database dan konfigurasi Vercel diatur di lingkungan tujuan. Transfer file dibagi menjadi beberapa bagian dengan batas total 64 MiB per file terenkripsi dan 192 MiB data sebelum kompresi. Sesi transfer berlaku 30 menit.

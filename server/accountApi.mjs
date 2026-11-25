@@ -1,3 +1,4 @@
+import {backupRoutes} from './backup.mjs';
 import express from 'express';
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import { database, initialize, credentials, transaction, fail } from './database.mjs';
@@ -185,6 +186,7 @@ export function accountApi(env = process.env) {
     await db.query('DELETE FROM ht_sessions WHERE account=$1 AND token<>$2', [a.id, digest(token)]);
     return true;
   });
+  backupRoutes(route);
   route('get', '/workspace', 'user', (db, _b, a, req) => readChanges(db, a, req.query.after));
   route('post', '/workspace', 'user', (db, b, a) => writeChanges(db, a, b.changes));
   app.use((err, _req, res, _next) => {
