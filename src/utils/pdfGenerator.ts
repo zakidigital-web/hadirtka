@@ -205,101 +205,96 @@ export function generateReportPDF(report: ComputedReport, fileName: string): voi
     doc.text(item.value, x + 3.5, boxY + 13);
   });
 
-  // Section 1: Rekap Kehadiran Siswa
-  doc.setTextColor(...slateDark);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text('1. Rekapitulasi Kehadiran Siswa', 14, 68);
+  const studentsByClass = new Map(report.classGroups.map(group => [group[0].student.classId, group]));
+  const classIds = new Set([...studentsByClass.keys(), ...report.journals.map(j => j.classId)]);
+  if (!classIds.size) doc.text('Belum ada data pada periode ini.', 14, 68);
+  let first = true;
+  for (const id of classIds) {
+    const students = studentsByClass.get(id) || [];
+    const journals = report.journals.filter(j => j.classId === id);
+    const name = students[0]?.className || journals[0].className;
+    if (!first) doc.addPage();
+    autoTable(doc, {
+      startY: first ? 64 : 14,
+      rowPageBreak: 'avoid',
+      head: [[{content: 'Rekapitulasi Kehadiran Siswa · ' + name, colSpan: 9}], ['No', 'NIS', 'Nama Siswa', 'Kelas', 'H', 'I', 'S', 'A', 'Kehadiran']],
+      body: students.map((row, index) => [
+        String(index + 1),
+        row.student.nis,
+        row.student.name,
+        row.className,
+        String(row.hadir),
+        String(row.izin),
+        String(row.sakit),
+        String(row.alpha),
+        `${row.percentage}%`,
+      ]),
+      styles: {
+        fontSize: 8.5,
+        cellPadding: {top: 1, bottom: 1, left: 2, right: 2},
+        textColor: [30, 41, 59],
+      },
+      headStyles: {
+        fillColor: teal,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 9 },
+        1: { cellWidth: 22 },
+        4: { halign: 'center', cellWidth: 10 },
+        5: { halign: 'center', cellWidth: 10 },
+        6: { halign: 'center', cellWidth: 10 },
+        7: { halign: 'center', cellWidth: 10 },
+        8: { halign: 'right', cellWidth: 20, fontStyle: 'bold' },
+      },
+      margin: { left: 14, right: 14 },
+    });
 
-  autoTable(doc, {
-    startY: 72,
-    head: [['No', 'NIS', 'Nama Siswa', 'Kelas', 'H', 'I', 'S', 'A', 'Kehadiran']],
-    body: report.classGroups.flatMap(group => [
-      [{content: group[0].className, colSpan: 9, styles: {fontStyle: 'bold' as const, fillColor: 232}}],
-      ...group.map((row, index) => [
-      String(index + 1),
-      row.student.nis,
-      row.student.name,
-      row.className,
-      String(row.hadir),
-      String(row.izin),
-      String(row.sakit),
-      String(row.alpha),
-      `${row.percentage}%`,
-    ])]),
-    styles: {
-      fontSize: 8.5,
-      cellPadding: 2.5,
-      textColor: [30, 41, 59],
-    },
-    headStyles: {
-      fillColor: teal,
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-    },
-    alternateRowStyles: {
-      fillColor: [248, 250, 252],
-    },
-    columnStyles: {
-      0: { halign: 'center', cellWidth: 9 },
-      1: { cellWidth: 22 },
-      4: { halign: 'center', cellWidth: 10 },
-      5: { halign: 'center', cellWidth: 10 },
-      6: { halign: 'center', cellWidth: 10 },
-      7: { halign: 'center', cellWidth: 10 },
-      8: { halign: 'right', cellWidth: 20, fontStyle: 'bold' },
-    },
-    margin: { left: 14, right: 14 },
-  });
+    first = false;
+    if (!journals.length) continue;
+    const lastY = (doc as unknown as {lastAutoTable: {finalY: number}}).lastAutoTable.finalY;
+    const newPage = lastY + 28 > doc.internal.pageSize.getHeight() - 14;
+    if (newPage) doc.addPage();
+    autoTable(doc, {
+      startY: newPage ? 14 : lastY + 4,
+      rowPageBreak: 'avoid',
+      head: [[{content: 'Jurnal Kehadiran & Pengajaran Guru · ' + name, colSpan: 5}],
+        ['Tanggal', 'Kelas & Guru', 'Jam', 'Materi TKA', 'Ringkasan / Kendala']],
+      body: journals.map((j) => [
+              formatDateShortID(j.date),
+              `${j.className} (${SUBJECT_META[j.subject]?.short || 'TKA'})\n${j.teacherName}`,
+              `${j.checkInTime}-${j.checkOutTime}`,
+              `${j.topic}\n(${j.moduleRef})`,
+              j.summary,
+            ]),
+      styles: {
+        fontSize: 8,
+        cellPadding: {top: 1, bottom: 1, left: 2, right: 2},
+        textColor: [30, 41, 59],
+        valign: 'top',
+      },
+      headStyles: {
+        fillColor: [30, 41, 59],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      columnStyles: {
+        0: { cellWidth: 23 },
+        1: { cellWidth: 34 },
+        2: { cellWidth: 22, halign: 'center' },
+        3: { cellWidth: 44 },
+      },
+      margin: { left: 14, right: 14 },
+    });
 
-  // Section 2: Jurnal Kehadiran & Materi Guru
-  const lastY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 140;
-  let journalHeaderY = lastY + 11;
-  if (journalHeaderY > 245) {
-    doc.addPage();
-    journalHeaderY = 20;
   }
-
-  doc.setTextColor(...slateDark);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text(`2. Jurnal Kehadiran & Pengajaran Guru (${report.journals.length} Sesi)`, 14, journalHeaderY);
-
-  autoTable(doc, {
-    startY: journalHeaderY + 4,
-    head: [['Tanggal', 'Kelas & Guru', 'Jam', 'Materi TKA', 'Ringkasan / Kendala']],
-    body:
-      report.journals.length > 0
-        ? report.journals.map((j) => [
-            formatDateShortID(j.date),
-            `${j.className} (${SUBJECT_META[j.subject]?.short || 'TKA'})\n${j.teacherName}`,
-            `${j.checkInTime}-${j.checkOutTime}`,
-            `${j.topic}\n(${j.moduleRef})`,
-            j.summary,
-          ])
-        : [['-', '-', '-', 'Belum ada jurnal guru pada periode ini.', '-']],
-    styles: {
-      fontSize: 8,
-      cellPadding: 2.5,
-      textColor: [30, 41, 59],
-      valign: 'top',
-    },
-    headStyles: {
-      fillColor: [30, 41, 59],
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-    },
-    alternateRowStyles: {
-      fillColor: [248, 250, 252],
-    },
-    columnStyles: {
-      0: { cellWidth: 23 },
-      1: { cellWidth: 34 },
-      2: { cellWidth: 22, halign: 'center' },
-      3: { cellWidth: 44 },
-    },
-    margin: { left: 14, right: 14 },
-  });
 
   // Signature block on final page
   const finalY =
@@ -584,62 +579,75 @@ export function generateClassJournalPDF(params: {
     doc.text(card.value, x + 4, boxY + 12.5);
   });
 
-  // Detailed Journal Table
-  autoTable(doc, {
-    startY: 54,
-    head: [
-      [
-        'No',
-        'Tanggal',
-        'Kelas & Guru',
-        'Jam Sesi',
-        'Siswa (H/Abs)',
-        'Materi TKA & Modul',
-        'Ringkasan Perkembangan Kelas',
-        'Kendala & Tindak Lanjut',
-        'Status',
+  const journalGroups = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const id = row.journal.classId;
+    if (!journalGroups.has(id)) journalGroups.set(id, []);
+    journalGroups.get(id)!.push(row);
+  }
+  const groups = journalGroups.size ? [...journalGroups.values()] : [[]];
+  groups.forEach((group, index) => {
+    if (index) doc.addPage();
+    // Detailed Journal Table
+    autoTable(doc, {
+      startY: index === 0 ? 54 : 14,
+      rowPageBreak: 'avoid',
+      head: [
+        [{content: group[0]?.className || classLabel, colSpan: 9}],
+        [
+          'No',
+          'Tanggal',
+          'Kelas & Guru',
+          'Jam Sesi',
+          'Siswa (H/Abs)',
+          'Materi TKA & Modul',
+          'Ringkasan Perkembangan Kelas',
+          'Kendala & Tindak Lanjut',
+          'Status',
+        ],
       ],
-    ],
-    body:
-      rows.length > 0
-        ? rows.map((row, idx) => [
-            String(idx + 1),
-            formatDateShortID(row.journal.date),
-            `${row.className} · ${SUBJECT_META[row.journal.subject]?.short || 'TKA'}\n${row.journal.teacherName}`,
-            `${row.journal.checkInTime}–${row.journal.checkOutTime}\n(${Math.round(row.durationMinutes / 60 * 10) / 10}j)`,
-            `${row.presentCount} H / ${row.absentCount} Abs`,
-            `${row.journal.topic}\n[${row.journal.moduleRef}]`,
-            row.journal.summary,
-            row.journal.obstacles,
-            row.journal.verified ? 'Terverifikasi' : 'Draf',
-          ])
-        : [['-', '-', '-', '-', '-', 'Belum ada data jurnal kelas pada periode ini.', '-', '-', '-']],
-    styles: {
-      fontSize: 8,
-      cellPadding: 2.5,
-      textColor: [30, 41, 59],
-      valign: 'top',
-    },
-    headStyles: {
-      fillColor: teal,
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-    },
-    alternateRowStyles: {
-      fillColor: [248, 250, 252],
-    },
-    columnStyles: {
-      0: { cellWidth: 9, halign: 'center' },
-      1: { cellWidth: 24 },
-      2: { cellWidth: 34 },
-      3: { cellWidth: 23, halign: 'center' },
-      4: { cellWidth: 22, halign: 'center' },
-      5: { cellWidth: 46 },
-      6: { cellWidth: 54 },
-      7: { cellWidth: 38 },
-      8: { cellWidth: 19, halign: 'center' },
-    },
-    margin: { left: 14, right: 14 },
+      body:
+        group.length > 0
+          ? group.map((row, idx) => [
+              String(idx + 1),
+              formatDateShortID(row.journal.date),
+              `${row.className} · ${SUBJECT_META[row.journal.subject]?.short || 'TKA'}\n${row.journal.teacherName}`,
+              `${row.journal.checkInTime}–${row.journal.checkOutTime}\n(${Math.round(row.durationMinutes / 60 * 10) / 10}j)`,
+              `${row.presentCount} H / ${row.absentCount} Abs`,
+              `${row.journal.topic}\n[${row.journal.moduleRef}]`,
+              row.journal.summary,
+              row.journal.obstacles,
+              row.journal.verified ? 'Terverifikasi' : 'Draf',
+            ])
+          : [['-', '-', '-', '-', '-', 'Belum ada data jurnal kelas pada periode ini.', '-', '-', '-']],
+      styles: {
+        fontSize: 8,
+        cellPadding: 1.5,
+        textColor: [30, 41, 59],
+        valign: 'top',
+      },
+      headStyles: {
+        fillColor: teal,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      columnStyles: {
+        0: { cellWidth: 9, halign: 'center' },
+        1: { cellWidth: 24 },
+        2: { cellWidth: 34 },
+        3: { cellWidth: 23, halign: 'center' },
+        4: { cellWidth: 22, halign: 'center' },
+        5: { cellWidth: 46 },
+        6: { cellWidth: 54 },
+        7: { cellWidth: 38 },
+        8: { cellWidth: 19, halign: 'center' },
+      },
+      margin: { left: 14, right: 14 },
+    });
+
   });
 
   // Footer & Signatures
