@@ -65,7 +65,9 @@ export interface TeacherJournal {
   classId: string;
   teacherName: string;
   teacherId?: string;
-  teacherStatus: 'hadir' | 'digantikan';
+  scheduledTeacherId?: string;
+  scheduledTeacherName?: string;
+  teacherStatus: 'hadir' | 'digantikan' | 'tidak_masuk';
   substituteTeacher?: string;
   checkInTime: string;
   checkOutTime: string;

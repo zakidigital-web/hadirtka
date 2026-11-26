@@ -7,6 +7,7 @@ export function TeacherHistory() {
   const {data, currentUser} = useApp();
   if (!currentUser) return null;
   const rows = data.journals.filter(journal => {
+    if (journal.teacherStatus === 'tidak_masuk') return false;
     if (journal.teacherId) return journal.teacherId === currentUser.id;
     const name = journal.substituteTeacher || journal.teacherName.replace(/ \(Pengganti\)$/, '');
     return [currentUser.name, currentUser.accountName].includes(name);

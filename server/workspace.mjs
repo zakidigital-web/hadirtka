@@ -109,11 +109,15 @@ export async function writeChanges(db, account, changes) {
       fail(409, 'Kelas siswa tidak tersedia.');
     if (teacher && kind === 'attendance' && value.recordedBy !== account.profile.name)
       fail(403, 'Nama pencatat tidak sesuai.');
+    if (kind === 'journals' && value && !['hadir', 'tidak_masuk', 'digantikan'].includes(value.teacherStatus))
+      fail(400, 'Status kehadiran guru tidak valid.');
     if (teacher && kind === 'journals') {
+      if (value.scheduledTeacherId && (value.scheduledTeacherId !== account.id || value.scheduledTeacherName !== account.profile.name))
+        fail(403, 'Identitas guru terjadwal tidak sesuai.');
       if (current?.teacherId && current.teacherId !== account.id) fail(403, 'Jurnal milik guru lain.');
       if (value.teacherId && value.teacherId !== account.id) fail(403, 'Identitas guru tidak sesuai.');
       if (
-        value.teacherStatus === 'hadir' &&
+        value.teacherStatus !== 'digantikan' &&
         (value.teacherId !== account.id || value.teacherName !== account.profile.name)
       )
         fail(403, 'Identitas pengajar tidak sesuai.');

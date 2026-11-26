@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Calendar, CheckCircle2, Clock, FileCheck2, Save } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { TkaSubject } from '../types';
+import { TeacherJournal, TkaSubject } from '../types';
 import { formatDateLongID, formatDateShortID, SUBJECT_META } from '../utils/formatters';
 
 export const TeacherJournalView: React.FC = () => {
@@ -33,7 +33,7 @@ export const TeacherJournalView: React.FC = () => {
     [data.journals, selectedDate, selectedSubject, activeClass?.id]
   );
 
-  const [teacherStatus, setTeacherStatus] = useState<'hadir' | 'digantikan'>('hadir');
+  const [teacherStatus, setTeacherStatus] = useState<TeacherJournal['teacherStatus']>('hadir');
   const [substituteTeacher, setSubstituteTeacher] = useState('');
   const [checkInTime, setCheckInTime] = useState('13:30');
   const [checkOutTime, setCheckOutTime] = useState('14:30');
@@ -91,25 +91,27 @@ export const TeacherJournalView: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeClass || !topic.trim()) return;
+    if (!activeClass || (teacherStatus !== 'tidak_masuk' && !topic.trim())) return;
 
     saveTeacherJournal({
       date: selectedDate,
       subject: selectedSubject,
       classId: activeClass.id,
-      teacherId: teacherStatus === 'hadir' ? currentUser?.id : undefined,
+      scheduledTeacherId: currentUser?.role === 'guru' ? currentUser.id : undefined,
+      scheduledTeacherName: currentUser?.role === 'guru' ? activeTeacherName : activeClass.teacherName,
+      teacherId: teacherStatus !== 'digantikan' ? currentUser?.id : undefined,
       teacherName:
         teacherStatus === 'digantikan' && substituteTeacher.trim()
           ? `${substituteTeacher.trim()} (Pengganti)`
           : activeTeacherName,
       teacherStatus,
       substituteTeacher: teacherStatus === 'digantikan' ? substituteTeacher.trim() : undefined,
-      checkInTime,
-      checkOutTime,
-      topic: topic.trim(),
+      checkInTime: teacherStatus === 'tidak_masuk' ? '' : checkInTime,
+      checkOutTime: teacherStatus === 'tidak_masuk' ? '' : checkOutTime,
+      topic: teacherStatus === 'tidak_masuk' ? 'Tidak masuk' : topic.trim(),
       moduleRef:
         moduleRef.trim() || `Modul ${SUBJECT_META[selectedSubject].full} Kelas 9`,
-      summary: summary.trim() || 'Pembelajaran terlaksana sesuai rencana harian.',
+      summary: teacherStatus === 'tidak_masuk' ? 'Guru tidak masuk.' : summary.trim() || 'Pembelajaran terlaksana sesuai rencana harian.',
       obstacles: obstacles.trim() || 'Tidak ada kendala berarti.',
       verified,
     });
@@ -235,6 +237,10 @@ export const TeacherJournalView: React.FC = () => {
                 >
                   Guru Pengganti
                 </button>
+                <button type="button" onClick={() => setTeacherStatus('tidak_masuk')}
+                  className={`min-h-11 rounded-xl border text-xs font-semibold ${teacherStatus === 'tidak_masuk' ? 'bg-red-700 text-white' : 'bg-white text-slate-600'}`}>
+                  Tidak masuk
+                </button>
               </div>
             </div>
 
@@ -290,7 +296,7 @@ export const TeacherJournalView: React.FC = () => {
               <input
                 id="materi-tka"
                 type="text"
-                required
+                required={teacherStatus !== 'tidak_masuk'}
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder={

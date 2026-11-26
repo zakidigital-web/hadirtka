@@ -1,3 +1,4 @@
+import { TeacherAttendanceTable } from './TeacherAttendanceTable';
 import { BackupView } from './BackupView';
 import React, { useMemo, useState } from 'react';
 import {
@@ -410,7 +411,7 @@ export const AdminDashboardView: React.FC = () => {
 
       {adminTab === 'analitik' ? (
         <>
-          {/* 4-Column KPI Strip */}
+          <TeacherAttendanceTable />
           <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
               <p className="text-xs font-medium text-slate-500">Kehadiran Siswa</p>
