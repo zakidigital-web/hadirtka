@@ -81,7 +81,7 @@ interface AppContextValue {
   updateStudent: (student: Student) => void;
   deleteStudent: (studentId: string) => void;
   addClassroom: (classroom: Omit<Classroom, 'id'>) => void;
-  deleteClassroom: (id: string) => void;
+  deleteClassroom: (id: string) => Promise<void>;
   updateClassroom: (classroom: Classroom) => void;
   resetDemoData: () => void;
 }
@@ -607,15 +607,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [canAdmin, pushToast]
   );
 
-  const deleteClassroom = (id: string) => {
+  const deleteClassroom = async (id: string) => {
     if (!canAdmin) return;
-    const remaining = data.classrooms.filter(c => c.id !== id);
-    if (!remaining.length || [...data.students, ...data.attendance, ...data.journals].some(row => row.classId === id)) {
-      pushToast({ title: 'Kelas belum bisa dihapus', subtitle: 'Setidaknya satu kelas harus tersedia. Kelas dengan siswa, absensi, atau jurnal masih digunakan.', tone: 'warning' });
-      return;
-    }
-    setData(prev => ({ ...prev, classrooms: prev.classrooms.filter(c => c.id !== id) }));
-    if (selectedClassId === id) setSelectedClassId(remaining[0].id);
+    await flush();
+    await accountRequest('classrooms/delete', { id });
+    if (selectedClassId === id) setSelectedClassId(data.classrooms.find(c => c.id !== id)?.id || '');
+    retry();
   };
 
   const resetDemoData = useCallback(() => {

@@ -36,6 +36,7 @@ export interface ComputedReport {
   totalAlpha: number;
   attendanceRate: number;
   studentRows: ReportStudentRow[];
+  classGroups: ReportStudentRow[][];
   journals: (TeacherJournal & { className: string })[];
 }
 
@@ -111,6 +112,12 @@ export function computeReportData(params: {
     };
   });
 
+  const groups = new Map<string, ReportStudentRow[]>();
+  for (const row of studentRows) {
+    if (!groups.has(row.student.classId)) groups.set(row.student.classId, []);
+    groups.get(row.student.classId)!.push(row);
+  }
+  const classGroups = [...groups.values()].sort((a,b) => a[0].className.localeCompare(b[0].className, 'id', {numeric: true}));
   const totalHadir = filteredAttendance.filter((r) => r.status === 'hadir').length;
   const totalIzin = filteredAttendance.filter((r) => r.status === 'izin').length;
   const totalSakit = filteredAttendance.filter((r) => r.status === 'sakit').length;
@@ -134,6 +141,7 @@ export function computeReportData(params: {
     totalAlpha,
     attendanceRate,
     studentRows,
+    classGroups,
     journals: filteredJournals,
   };
 }
@@ -206,7 +214,9 @@ export function generateReportPDF(report: ComputedReport, fileName: string): voi
   autoTable(doc, {
     startY: 72,
     head: [['No', 'NIS', 'Nama Siswa', 'Kelas', 'H', 'I', 'S', 'A', 'Kehadiran']],
-    body: report.studentRows.map((row, index) => [
+    body: report.classGroups.flatMap(group => [
+      [{content: group[0].className, colSpan: 9, styles: {fontStyle: 'bold' as const, fillColor: 232}}],
+      ...group.map((row, index) => [
       String(index + 1),
       row.student.nis,
       row.student.name,
@@ -216,7 +226,7 @@ export function generateReportPDF(report: ComputedReport, fileName: string): voi
       String(row.sakit),
       String(row.alpha),
       `${row.percentage}%`,
-    ]),
+    ])]),
     styles: {
       fontSize: 8.5,
       cellPadding: 2.5,
@@ -393,8 +403,9 @@ export function downloadPeriodReportPDF(params: {
 }
 
 export function downloadAttendanceCSV(report: ComputedReport, fileName: string): void {
-  const headers = ['NIS', 'Nama Siswa', 'Kelas', 'Orang Tua', 'WhatsApp', 'Hadir', 'Izin', 'Sakit', 'Alpha', 'Persentase'];
-  const rows = report.studentRows.map((r) => [
+  const headers = ['No', 'NIS', 'Nama Siswa', 'Kelas', 'Orang Tua', 'WhatsApp', 'Hadir', 'Izin', 'Sakit', 'Alpha', 'Persentase'];
+  const rows = report.classGroups.flatMap(group => group.map((r,index) => [
+    index + 1,
     r.student.nis,
     `"${r.student.name}"`,
     `"${r.className}"`,
@@ -405,7 +416,7 @@ export function downloadAttendanceCSV(report: ComputedReport, fileName: string):
     r.sakit,
     r.alpha,
     `${r.percentage}%`,
-  ]);
+  ]));
   const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);

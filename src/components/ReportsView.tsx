@@ -748,13 +748,14 @@ export const ReportsView: React.FC = () => {
               1. Rekapitulasi Kehadiran Siswa ({report.studentRows.length} siswa)
             </h3>
 
-            {/* Mobile Card List */}
+            {report.classGroups.map(group => <section key={group[0].student.classId} className="mt-4">
+            <h4 className="rounded-lg bg-blue-50 p-2 font-semibold text-blue-900">{group[0].className}</h4>
             <div className="mt-3 divide-y divide-slate-100 md:hidden">
-              {report.studentRows.map((row) => (
+              {group.map((row, index) => (
                 <div key={row.student.id} className="flex items-center justify-between gap-3 py-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-slate-900">
-                      {row.student.name}
+                      {index + 1}. {row.student.name}
                     </p>
                     <p className="mt-0.5 text-xs text-slate-500">
                       {row.className} · H:{row.hadir} I:{row.izin} S:{row.sakit} A:{row.alpha}
@@ -793,10 +794,10 @@ export const ReportsView: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {report.studentRows.map((row) => (
+                  {group.map((row, index) => (
                     <tr key={row.student.id} className="hover:bg-slate-50/80">
                       <td className="py-2.5 pr-3 font-mono text-slate-500">{row.student.nis}</td>
-                      <td className="py-2.5 pr-3 font-medium text-slate-900">{row.student.name}</td>
+                      <td className="py-2.5 pr-3 font-medium text-slate-900">{index + 1}. {row.student.name}</td>
                       <td className="py-2.5 pr-3 text-slate-600">{row.className}</td>
                       <td className="py-2.5 px-2 text-right font-mono font-medium text-emerald-700 tabular-nums">
                         {row.hadir}
@@ -828,6 +829,7 @@ export const ReportsView: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            </section>)}
           </div>
 
           {/* Section 2: Teacher Journals Included in Report */}

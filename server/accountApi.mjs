@@ -119,6 +119,8 @@ export function accountApi(env = process.env) {
       ((!b.id || b.password) && (typeof b.password !== 'string' || b.password.length < 8))
     )
       fail(400, 'Periksa isian akun dan kata sandi.');
+    if (!(await db.query("SELECT 1 FROM ht_records WHERE kind='classrooms' AND id=$1 AND value IS NOT NULL", [classId])).rowCount)
+      fail(409, 'Kelas sudah dihapus. Pilih kelas lain.');
     const old =
       b.id && (await db.query("SELECT * FROM ht_accounts WHERE role='guru' AND id=$1", [b.id])).rows[0];
     if (b.id && !old) fail(404, 'Akun tidak ditemukan.');
@@ -188,6 +190,19 @@ export function accountApi(env = process.env) {
   });
   backupRoutes(route);
   route('get', '/workspace', 'user', (db, _b, a, req) => readChanges(db, a, req.query.after));
+  route('post', '/classrooms/delete', 'admin', async (db, b) => {
+    const id = textField(b, 'id', 180);
+    const removed = await db.query(`UPDATE ht_records SET value=NULL, version=nextval('ht_version')
+      WHERE kind='classrooms' AND id=$1 AND value IS NOT NULL RETURNING id`, [id]);
+    if (!removed.rowCount) fail(409, 'Kelas sudah dihapus. Muat ulang daftar kelas.');
+    await db.query(`WITH students AS (
+      SELECT id FROM ht_records WHERE kind='students' AND value->>'classId'=$1
+    ) UPDATE ht_records SET value=NULL, version=nextval('ht_version')
+      WHERE (kind IN ('students','attendance','journals','whatsappLogs') AND value->>'classId'=$1)
+         OR (kind IN ('attendance','whatsappLogs') AND value->>'studentId' IN (SELECT id FROM students))`, [id]);
+    await db.query("UPDATE ht_accounts SET profile=profile-'classId', revision=revision+1 WHERE profile->>'classId'=$1", [id]);
+    return true;
+  });
   route('post', '/workspace', 'user', (db, b, a) => writeChanges(db, a, b.changes));
   app.use((err, _req, res, _next) => {
     if (err.code === '23505')

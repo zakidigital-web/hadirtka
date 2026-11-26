@@ -85,6 +85,9 @@ export const ClassManagementView: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Confirm delete / reset
+  const [deletingClass, setDeletingClass] = useState<Classroom | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const [confirmDeleteStudent, setConfirmDeleteStudent] = useState<Student | null>(null);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
 
@@ -378,12 +381,7 @@ export const ClassManagementView: React.FC = () => {
                   Edit kelas
                 </button>)}
                 {canAdmin && <button type="button" className="min-h-11 font-semibold text-rose-700"
-                  onClick={() => {
-                    if (window.confirm(`Hapus kelas ${cls.name}?`)) {
-                      deleteClassroom(cls.id);
-                      if (classFilter === cls.id) setClassFilter('all');
-                    }
-                  }}>Hapus kelas</button>}
+                  onClick={() => { setDeleteError(''); setDeletingClass(cls); }}>Hapus kelas</button>}
               </div>
             </div>
           );
@@ -918,6 +916,34 @@ export const ClassManagementView: React.FC = () => {
             </button>
           </div>
         </form>
+      </BottomSheet>
+
+      <BottomSheet open={!!deletingClass} title={`Hapus kelas ${deletingClass?.name || ''}?`}
+        onClose={() => { if (!deletingBusy) setDeletingClass(null); }}>
+        {deletingClass && <>
+          <p className="text-sm">Kelas dan data berikut akan dihapus permanen:</p>
+          <ul className="my-3 list-disc pl-5 text-sm">
+            <li>{data.students.filter(s => s.classId === deletingClass.id).length} siswa yang saat ini terdaftar di kelas ini</li>
+            <li>Absensi dan log WhatsApp kelas ini serta riwayat siswa yang ikut dihapus</li>
+            <li>{data.journals.filter(j => j.classId === deletingClass.id).length} jurnal kelas, termasuk catatan kehadiran guru</li>
+          </ul>
+          <p className="text-sm">Akun guru tetap tersedia. Penugasan kelas awal yang terkait akan dilepas.</p>
+          {deleteError && <p role="alert" className="mt-2 text-red-700">{deleteError}</p>}
+          <div className="mt-4 flex flex-wrap justify-end gap-2">
+            <button disabled={deletingBusy} onClick={() => setDeletingClass(null)} className="min-h-11 rounded-xl border px-4">Batal</button>
+            <button disabled={deletingBusy} className="min-h-11 rounded-xl bg-red-700 px-4 font-semibold text-white" onClick={async () => {
+              setDeletingBusy(true);
+              setDeleteError('');
+              try {
+                await deleteClassroom(deletingClass.id);
+                if (classFilter === deletingClass.id) setClassFilter('all');
+                setDeletingClass(null);
+                pushToast({title: 'Kelas dihapus', subtitle: deletingClass.name, tone: 'success'});
+              } catch (err) { setDeleteError((err as Error).message); }
+              finally { setDeletingBusy(false); }
+            }}>{deletingBusy ? 'Menghapus…' : 'Hapus kelas dan data terkait'}</button>
+          </div>
+        </>}
       </BottomSheet>
 
       {/* Delete Student Confirmation */}
