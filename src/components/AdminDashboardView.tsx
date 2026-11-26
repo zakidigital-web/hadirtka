@@ -41,7 +41,7 @@ import {
 } from '../utils/formatters';
 import { computeSessionMinutes, downloadMonthlyReportPDF } from '../utils/pdfGenerator';
 
-type PeriodKey = '7d' | '14d' | '30d' | 'bulan_ini';
+type PeriodKey = '7d' | '14d' | '30d' | 'bulan_ini' | 'custom';
 type AdminSubTab = 'analitik' | 'skema' | 'cadangan';
 
 export const AdminDashboardView: React.FC = () => {
@@ -52,18 +52,23 @@ export const AdminDashboardView: React.FC = () => {
 
   const todayISO = getTodayISO();
   const nowDate = new Date();
+  const [month, setMonth] = useState(todayISO.slice(0, 7));
+  const [customStart, setCustomStart] = useState(addDaysISO(todayISO, -6));
+  const [customEnd, setCustomEnd] = useState(todayISO);
 
   const dateBounds = useMemo(() => {
     if (period === '7d') return { start: addDaysISO(todayISO, -6), end: todayISO, label: '7 Hari Terakhir' };
     if (period === '14d') return { start: addDaysISO(todayISO, -13), end: todayISO, label: '14 Hari Terakhir' };
     if (period === '30d') return { start: addDaysISO(todayISO, -29), end: todayISO, label: '30 Hari Terakhir' };
-    const monthRange = getMonthRangeISO(nowDate.getFullYear(), nowDate.getMonth());
+    if (period === 'custom') return { start: customStart, end: customEnd, label: customStart + ' – ' + customEnd };
+    const [year, monthNumber] = month.split('-').map(Number);
+    const monthRange = getMonthRangeISO(year, monthNumber - 1);
     return {
       start: monthRange.start,
       end: monthRange.end,
-      label: `${INDONESIAN_MONTHS[nowDate.getMonth()]} ${nowDate.getFullYear()}`,
+      label: `${INDONESIAN_MONTHS[monthNumber - 1]} ${year}`,
     };
-  }, [period, todayISO, nowDate]);
+  }, [period, todayISO, month, customStart, customEnd]);
 
   const periodAttendance = useMemo(
     () =>
@@ -383,18 +388,20 @@ export const AdminDashboardView: React.FC = () => {
         </div>
 
         {adminTab === 'analitik' && (
-          <div className="mt-4 flex items-center gap-1.5 border-t border-slate-100 pt-3.5">
+          <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-3.5">
             {(
               [
                 { id: '7d', label: '7 Hari' },
-                { id: '14d', label: '14 Hari' },
+                { id: '14d', label: '2 Minggu' },
                 { id: '30d', label: '30 Hari' },
-                { id: 'bulan_ini', label: 'Bulan Ini' },
+                { id: 'bulan_ini', label: 'Bulanan' },
+                { id: 'custom', label: 'Kustom' },
               ] as const
             ).map((item) => (
               <button
                 key={item.id}
                 type="button"
+                aria-pressed={period === item.id}
                 onClick={() => setPeriod(item.id)}
                 className={`min-h-[36px] whitespace-nowrap rounded-lg px-3 text-xs font-semibold transition-colors ${
                   period === item.id
@@ -405,13 +412,28 @@ export const AdminDashboardView: React.FC = () => {
                 {item.label}
               </button>
             ))}
+            {period === 'bulan_ini' && <label className="flex items-center gap-2 text-sm">Bulan
+              <input type="month" className="min-h-11 rounded-lg border px-2" value={month}
+                onChange={e => e.target.value && setMonth(e.target.value)} />
+            </label>}
+            {period === 'custom' && <div className="flex w-full flex-wrap gap-3 text-sm">
+              <label>Dari <input type="date" className="min-h-11 rounded-lg border px-2" value={customStart}
+                onChange={e => {
+                  const day = e.target.value;
+                  if (!day) return;
+                  setCustomStart(day);
+                  if (day > customEnd) setCustomEnd(day);
+                }} /></label>
+              <label>Sampai <input type="date" className="min-h-11 rounded-lg border px-2" value={customEnd} min={customStart}
+                onChange={e => e.target.value >= customStart && setCustomEnd(e.target.value)} /></label>
+            </div>}
           </div>
         )}
       </section>
 
       {adminTab === 'analitik' ? (
         <>
-          <TeacherAttendanceTable />
+          <TeacherAttendanceTable start={dateBounds.start} end={dateBounds.end} />
           <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
               <p className="text-xs font-medium text-slate-500">Kehadiran Siswa</p>
