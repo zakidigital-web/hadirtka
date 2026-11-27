@@ -7,6 +7,7 @@ export type NavTab =
   | 'jurnal'
   | 'whatsapp'
   | 'laporan'
+  | 'cadangan'
   | 'akun_guru'
   | 'analitik'
   | 'kelas';

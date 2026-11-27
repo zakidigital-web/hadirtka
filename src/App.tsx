@@ -1,3 +1,4 @@
+import { BackupView } from './components/BackupView';
 import { TeacherAccounts } from './components/AccountSettings';
 import { TeacherHistory } from './components/TeacherHistory';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -6,6 +7,8 @@ import {
   BookOpen,
   ClipboardCheck,
   ExternalLink,
+  Database,
+  Ellipsis,
   FileText,
   GraduationCap,
   LogOut,
@@ -46,6 +49,7 @@ const ADMIN_NAV: NavItem[] = [
   { id: 'absensi', label: 'Pantau Absensi', mobileLabel: 'Absensi', icon: ClipboardCheck },
   { id: 'whatsapp', label: 'WhatsApp', mobileLabel: 'WA Grup', icon: MessageCircle },
   { id: 'kelas', label: 'Data Kelas', mobileLabel: 'Kelas', icon: Users },
+  { id: 'cadangan', label: 'Backup & Restore', mobileLabel: 'Cadangan', icon: Database },
   { id: 'akun_guru', label: 'Akun Guru', mobileLabel: 'Akun Guru', icon: GraduationCap },
 ];
 
@@ -56,6 +60,7 @@ const TAB_TITLE: Record<NavTab, string> = {
   laporan: 'Laporan PDF',
   analitik: 'Analitik Admin',
   akun_guru: 'Kelola Akun Guru',
+  cadangan: 'Backup & Restore Database',
   kelas: 'Data Kelas',
 };
 
@@ -109,11 +114,16 @@ const AppShell: React.FC = () => {
     updateWhatsAppLogStatus,
   } = useApp();
 
+  const [moreOpen, setMoreOpen] = useState(false);
   const [accountSheetOpen, setAccountSheetOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
 
   const canAdmin = currentUser?.role === 'admin' && role === 'admin';
   const navItems = canAdmin ? ADMIN_NAV : GURU_NAV;
+
+  const primaryItems = navItems.slice(0, 4);
+  const moreItems = navItems.slice(4);
+  const moreActive = moreItems.some(item => item.id === activeTab);
 
   const pendingWaCount = useMemo(
     () => data.whatsappLogs.filter((l) => l.deliveryStatus === 'siap_kirim').length,
@@ -152,6 +162,8 @@ const AppShell: React.FC = () => {
         return canAdmin ? <WhatsAppView /> : <TeacherAttendanceView />;
       case 'laporan':
         return canAdmin ? <ReportsView /> : <TeacherHistory />;
+      case 'cadangan':
+        return canAdmin ? <BackupView onBack={() => setActiveTab('analitik')} /> : <TeacherAttendanceView />;
       case 'akun_guru':
         return canAdmin ? <TeacherAccounts /> : <TeacherAttendanceView />;
       case 'analitik':
@@ -339,8 +351,8 @@ const AppShell: React.FC = () => {
           aria-label="Navigasi ruang kerja"
           className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur-md pb-safe md:sticky md:inset-x-auto md:top-[54px] md:bottom-auto md:border-t-0 md:border-b md:pb-0 xl:hidden"
         >
-          <div className={`mx-auto grid h-[60px] max-w-6xl items-center px-1 md:gap-1 md:px-5 ${canAdmin ? "grid-cols-6" : "grid-cols-4"}`}>
-            {navItems.map((item) => {
+          <div className={`mx-auto grid h-[60px] max-w-6xl items-center px-1 md:gap-1 md:px-5 ${moreItems.length ? "grid-cols-5" : "grid-cols-4"}`}>
+            {primaryItems.map((item) => {
               const Icon = item.icon;
               const active = activeTab === item.id;
               return (
@@ -373,6 +385,12 @@ const AppShell: React.FC = () => {
                 </button>
               );
             })}
+            {moreItems.length > 0 && <button type="button" aria-haspopup="dialog" aria-expanded={moreOpen}
+              onClick={() => setMoreOpen(true)}
+              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 md:flex-row ${moreActive ? 'font-bold text-blue-800' : 'text-slate-600'}`}>
+              <span className={`flex h-7 w-12 items-center justify-center rounded-full ${moreActive ? 'bg-blue-100' : ''}`}><Ellipsis className="size-5" /></span>
+              <span className="text-[10px] md:text-xs">Lainnya</span>
+            </button>}
           </div>
         </nav>
 
@@ -383,6 +401,17 @@ const AppShell: React.FC = () => {
           {renderContent()}
         </main>
       </div>
+
+      <BottomSheet open={canAdmin && moreOpen} title="Menu lainnya" onClose={() => setMoreOpen(false)}>
+        <div className="grid gap-2">
+          {moreItems.map(({id, label, icon: Icon}) => <button type="button" key={id}
+            aria-current={activeTab === id ? 'page' : undefined}
+            className="flex min-h-12 items-center gap-3 rounded-xl border px-4 text-left text-sm font-semibold aria-[current=page]:bg-blue-50"
+            onClick={() => { setMoreOpen(false); setActiveTab(id); }}>
+            <Icon className="size-5 text-blue-700" />{label}
+          </button>)}
+        </div>
+      </BottomSheet>
 
       {/* Mobile Native Account & Role Bottom Sheet */}
       <BottomSheet
