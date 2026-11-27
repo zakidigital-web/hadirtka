@@ -132,7 +132,15 @@ export interface AuthUser {
   avatarUrl: string;
 }
 
+export interface ReportSignatures {
+  approverName: string;
+  approverRole: string;
+  reporterName: string;
+  reporterRole: string;
+}
+
 export interface ScheduledReportConfig {
+  signatures?: ReportSignatures;
   frequency: 'mingguan' | 'bulanan';
   dayOfWeek: string;
   dayOfMonth: number;

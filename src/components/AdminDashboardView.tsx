@@ -291,6 +291,7 @@ export const AdminDashboardView: React.FC = () => {
 
   const handleQuickMonthlyPDF = () => {
     downloadMonthlyReportPDF({
+      signatures: data.reportSchedule?.signatures,
       year: nowDate.getFullYear(),
       monthIndex: nowDate.getMonth(),
       classId: 'all',

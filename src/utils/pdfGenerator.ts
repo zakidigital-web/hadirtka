@@ -3,6 +3,7 @@ import autoTable from 'jspdf-autotable';
 import {
   AttendanceRecord,
   Classroom,
+  ReportSignatures,
   Student,
   TeacherJournal,
 } from '../types';
@@ -146,7 +147,68 @@ export function computeReportData(params: {
   };
 }
 
-export function generateReportPDF(report: ComputedReport, fileName: string): void {
+export const defaultSignatures: ReportSignatures = {
+  approverName: '', approverRole: 'Koordinator TKA',
+  reporterName: '', reporterRole: 'Guru Pembimbing',
+};
+
+function signReport(doc: jsPDF, signatures = defaultSignatures) {
+  const {getWidth, getHeight} = doc.internal.pageSize;
+  const width = getWidth();
+  const column = (width - 42) / 2;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  const blocks = [
+    {label: 'Mengetahui,', role: signatures.approverRole, name: signatures.approverName},
+    {label: 'Dilaporkan oleh,', role: signatures.reporterRole, name: signatures.reporterName},
+  ].map(block => ({...block, roleLines: doc.splitTextToSize(block.role, column), nameLines: doc.splitTextToSize(block.name, column)}));
+  const roleHeight = Math.max(...blocks.map(block => block.roleLines.length)) * 4;
+  const nameHeight = Math.max(...blocks.map(block => block.nameLines.length)) * 4;
+  let y = ((doc as unknown as {lastAutoTable?: {finalY:number}}).lastAutoTable?.finalY || 70) + 12;
+  if (y + 24 + roleHeight + nameHeight > getHeight() - 14) { doc.addPage(); y = 20; }
+  doc.setTextColor(15, 23, 42);
+  blocks.forEach((block, i) => {
+    const x = i ? width / 2 + 7 : 14;
+    doc.text(block.label, x, y);
+    doc.text(block.roleLines, x, y + 5);
+    doc.text(block.nameLines, x, y + 19 + roleHeight);
+    doc.line(x, y + 20 + roleHeight + nameHeight, x + column, y + 20 + roleHeight + nameHeight);
+  });
+}
+
+export function generateTeacherAttendancePDF(report: ComputedReport, fileName: string, signatures?: ReportSignatures) {
+  const doc = new jsPDF();
+  const groups = new Map<string, ComputedReport['journals']>();
+  for (const journal of report.journals) {
+    if (!groups.has(journal.classId)) groups.set(journal.classId, []);
+    groups.get(journal.classId)!.push(journal);
+  }
+  const classes = [...groups.values()].sort((a,b) => a[0].className.localeCompare(b[0].className, 'id', {numeric:true}));
+  if (!classes.length) classes.push([]);
+  classes.forEach((sessions,index) => {
+    if (index) doc.addPage();
+    doc.setFontSize(14);
+    doc.text('Daftar Hadir Guru Pembimbing', 14, 18);
+    doc.setFontSize(10);
+    doc.text([report.institutionName, report.periodLabel], 14, 25);
+    autoTable(doc, {
+      startY: 38, rowPageBreak: 'avoid',
+      head: [[{content: sessions[0]?.className || report.classLabel, colSpan: 6}],
+        ['Tanggal', 'Guru pembimbing', 'Mapel', 'Jam', 'Status', 'Pengganti']],
+      body: sessions.length ? sessions.map(j => [
+        formatDateShortID(j.date), j.teacherStatus === 'digantikan' ? j.scheduledTeacherName || 'Belum tercatat' : j.teacherName,
+        SUBJECT_META[j.subject].label, j.checkInTime ? j.checkInTime + '–' + j.checkOutTime : '—',
+        {hadir:'Masuk', tidak_masuk:'Tidak masuk', digantikan:'Digantikan'}[j.teacherStatus],
+        j.substituteTeacher || '—',
+      ]) : [[{content: 'Belum ada jurnal guru pada periode ini.', colSpan: 6}]],
+      styles: {fontSize: 9, cellPadding: 2},
+    });
+  });
+  signReport(doc, signatures);
+  doc.save(fileName);
+}
+
+export function generateReportPDF(report: ComputedReport, fileName: string, signatures?: ReportSignatures): void {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const teal: [number, number, number] = [13, 110, 110];
@@ -296,29 +358,7 @@ export function generateReportPDF(report: ComputedReport, fileName: string): voi
 
   }
 
-  // Signature block on final page
-  const finalY =
-    (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 200;
-  let sigY = finalY + 16;
-  if (sigY > 255) {
-    doc.addPage();
-    sigY = 28;
-  }
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...slateDark);
-
-  doc.text('Mengetahui,', 14, sigY);
-  doc.text('Koordinator TKA Kelas 9 / Waka Kurikulum', 14, sigY + 5);
-  doc.text('Koordinator Contoh', 14, sigY + 24);
-  doc.setDrawColor(148, 163, 184);
-  doc.line(14, sigY + 25.5, 76, sigY + 25.5);
-
-  doc.text('Dilaporkan oleh,', pageWidth - 70, sigY);
-  doc.text('Perwakilan Guru Pembimbing Kelas 9', pageWidth - 70, sigY + 5);
-  doc.text('Guru Contoh A', pageWidth - 70, sigY + 24);
-  doc.line(pageWidth - 70, sigY + 25.5, pageWidth - 14, sigY + 25.5);
+  signReport(doc, signatures);
 
   // Page numbers
   const totalPages = doc.getNumberOfPages();
@@ -338,6 +378,7 @@ export function generateReportPDF(report: ComputedReport, fileName: string): voi
 }
 
 export function downloadMonthlyReportPDF(params: {
+  signatures?: ReportSignatures;
   year: number;
   monthIndex: number;
   classId: string;
@@ -366,7 +407,7 @@ export function downloadMonthlyReportPDF(params: {
   });
 
   const slug = `Laporan-Bulanan-TKA-${monthName}-${params.year}.pdf`;
-  generateReportPDF(report, slug);
+  generateReportPDF(report, slug, params.signatures);
 }
 
 export function downloadPeriodReportPDF(params: {
@@ -505,6 +546,7 @@ export function buildJournalReportRows(params: {
 }
 
 export function generateClassJournalPDF(params: {
+  signatures?: ReportSignatures;
   periodTitle: string;
   startDate: string;
   endDate: string;
@@ -650,25 +692,7 @@ export function generateClassJournalPDF(params: {
 
   });
 
-  // Footer & Signatures
-  const lastY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 150;
-  let sigY = lastY + 12;
-  if (sigY > 175) {
-    doc.addPage();
-    sigY = 24;
-  }
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(...slateDark);
-  doc.text('Disetujui oleh, Koordinator TKA Kelas 9', 14, sigY);
-  doc.text('Koordinator Contoh', 14, sigY + 18);
-  doc.setDrawColor(148, 163, 184);
-  doc.line(14, sigY + 19.5, 76, sigY + 19.5);
-
-  doc.text('Dilaporkan oleh, Guru Pembimbing', pageWidth - 74, sigY);
-  doc.text(selectedClass?.teacherName || 'Guru Contoh A', pageWidth - 74, sigY + 18);
-  doc.line(pageWidth - 74, sigY + 19.5, pageWidth - 14, sigY + 19.5);
+  signReport(doc, params.signatures);
 
   const pageCount = doc.getNumberOfPages();
   for (let p = 1; p <= pageCount; p++) {

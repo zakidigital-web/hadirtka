@@ -31,6 +31,8 @@ import {
   downloadAttendanceCSV,
   downloadMonthlyReportPDF,
   generateReportPDF,
+  defaultSignatures,
+  generateTeacherAttendancePDF,
   generateClassJournalPDF,
 } from '../utils/pdfGenerator';
 
@@ -69,6 +71,8 @@ export const ReportsView: React.FC = () => {
     }
   );
 
+  const signatures = data.reportSchedule?.signatures || defaultSignatures;
+  const [signatureDraft, setSignatureDraft] = useState(signatures);
   const periodRange = useMemo(() => {
     if (mode === 'bulanan') {
       const range = getMonthRangeISO(selectedYear, selectedMonth);
@@ -180,6 +184,7 @@ export const ReportsView: React.FC = () => {
   const handleDownloadPDF = () => {
     if (mode === 'jurnal_pdf') {
       generateClassJournalPDF({
+        signatures,
         periodTitle: periodRange.title,
         startDate: periodRange.start,
         endDate: periodRange.end,
@@ -191,6 +196,7 @@ export const ReportsView: React.FC = () => {
       });
       updateReportSchedule({
         ...scheduleDraft,
+        signatures,
         lastGeneratedAt: new Date().toISOString(),
       });
       return;
@@ -198,6 +204,7 @@ export const ReportsView: React.FC = () => {
 
     if (mode === 'bulanan') {
       downloadMonthlyReportPDF({
+        signatures,
         year: selectedYear,
         monthIndex: selectedMonth,
         classId,
@@ -213,7 +220,7 @@ export const ReportsView: React.FC = () => {
         tone: 'success',
       });
     } else {
-      generateReportPDF(report, `Laporan-TKA-${preset === 'harian' ? reportDate : periodRange.start + '_sd_' + periodRange.end}.pdf`);
+      generateReportPDF(report, `Laporan-TKA-${preset === 'harian' ? reportDate : periodRange.start + '_sd_' + periodRange.end}.pdf`, signatures);
       pushToast({
         title: 'Laporan PDF berhasil diunduh',
         subtitle: `${periodRange.periodLabel} · ${report.classLabel}`,
@@ -471,6 +478,12 @@ export const ReportsView: React.FC = () => {
                   )}
                 </button>
 
+                <button type="button" className="min-h-11 rounded-xl bg-blue-700 px-4 text-xs font-semibold text-white"
+                  onClick={() => generateReportPDF({...report, title: 'Daftar Hadir Siswa', journals: []},
+                    `Daftar-Hadir-Siswa-${periodRange.start}_sd_${periodRange.end}.pdf`, signatures)}>PDF daftar hadir siswa</button>
+                <button type="button" className="min-h-11 rounded-xl bg-blue-700 px-4 text-xs font-semibold text-white"
+                  onClick={() => generateTeacherAttendancePDF(report,
+                    `Daftar-Hadir-Guru-${periodRange.start}_sd_${periodRange.end}.pdf`, signatures)}>PDF daftar hadir guru pembimbing</button>
                 <button
                   type="button"
                   onClick={handleDownloadCSV}
@@ -491,12 +504,28 @@ export const ReportsView: React.FC = () => {
               {mode === 'jurnal_pdf'
                 ? 'Konversi Jurnal ke PDF (Landscape)'
                 : mode === 'bulanan'
-                ? 'Unduh Laporan Bulanan (PDF)'
-                : 'Unduh Laporan PDF'}
+                ? 'PDF gabungan bulanan'
+                : 'PDF gabungan'}
             </button>
           </div>
         </div>
       </section>
+
+      <details className="rounded-2xl border border-slate-200 bg-white p-4">
+        <summary className="cursor-pointer font-semibold">Pengaturan tanda tangan PDF</summary>
+        <form className="mt-4 grid gap-3 sm:grid-cols-2" onSubmit={e => {
+          e.preventDefault();
+          updateReportSchedule({...data.reportSchedule || scheduleDraft, signatures: signatureDraft});
+        }}>
+          {([['approverRole','Jabatan yang mengetahui'],['approverName','Nama yang mengetahui'],
+             ['reporterRole','Jabatan pelapor'],['reporterName','Nama pelapor']] as const).map(([key,label]) =>
+            <label key={key} className="text-sm">{label}
+              <input maxLength={100} className="mt-1 block min-h-11 w-full rounded-xl border px-3" value={signatureDraft[key]}
+                onChange={e => setSignatureDraft({...signatureDraft, [key]: e.target.value})} />
+            </label>)}
+          <button className="min-h-11 rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white">Simpan tanda tangan</button>
+        </form>
+      </details>
 
       {mode === 'jurnal_pdf' ? (
         /* Dedicated Classroom Journal Periodic PDF Converter */
@@ -678,7 +707,7 @@ export const ReportsView: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => updateReportSchedule(scheduleDraft)}
+                onClick={() => updateReportSchedule({...scheduleDraft, signatures})}
                 className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-slate-900 text-xs font-semibold text-white hover:bg-slate-800"
               >
                 Simpan Jadwal Berkala
